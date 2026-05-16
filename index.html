@@ -256,7 +256,7 @@
 
     function getFirstSentence(text) {
       const normalizedText = text.trim();
-      const sentence = normalizedText.match(/^.+?(?:[。！？!?]|\n)/);
+      const sentence = normalizedText.match(/^.+?(?:[。！？!?]+[」』）)］\]｝}”’】〕〉》〙〗〟'"]*|\n)/);
 
       if (sentence) {
         return sentence[0].trim();
