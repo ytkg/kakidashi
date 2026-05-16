@@ -89,6 +89,7 @@
       position: relative;
       padding: 0 clamp(8px, 2vw, 22px);
       overflow-x: hidden;
+      overflow-anchor: none;
     }
 
     .sentence {
@@ -111,6 +112,7 @@
       white-space: nowrap;
       overflow: visible;
       overscroll-behavior: none;
+      overflow-anchor: none;
       transition: background-color 160ms ease, border-color 160ms ease;
     }
 
@@ -172,7 +174,9 @@
 
   <script>
     const FEED_URL = "https://masusono.com/feed.xml";
-    const INFINITE_SCROLL_THRESHOLD = 900;
+    const INITIAL_RENDER_COUNT = 80;
+    const APPEND_RENDER_COUNT = 24;
+    const INFINITE_SCROLL_THRESHOLD = 2600;
     const SENTENCE_END_PATTERN = /^.+?(?:[。！？!?]+[」』）)］\]｝}”’】〕〉》〙〗〟'"]*|\n)/;
 
     const sentences = document.getElementById("sentences");
@@ -184,6 +188,7 @@
     let columnWidth = 0;
     let columnGap = 0;
     let rowGap = 0;
+    let lastLayoutWidth = 0;
 
     function shuffleArticles() {
       for (let index = articles.length - 1; index > 0; index -= 1) {
@@ -241,7 +246,7 @@
 
       isAppending = true;
       window.requestAnimationFrame(() => {
-        appendSentences();
+        appendSentences(APPEND_RENDER_COUNT);
         isAppending = false;
       });
     }
@@ -260,6 +265,7 @@
       const containerWidth = sentences.clientWidth;
       const columnCount = Math.max(1, Math.floor((containerWidth + metrics.columnGap) / (metrics.preferredColumnWidth + metrics.columnGap)));
 
+      lastLayoutWidth = containerWidth;
       columnGap = metrics.columnGap;
       rowGap = metrics.rowGap;
       columnWidth = (containerWidth - columnGap * (columnCount - 1)) / columnCount;
@@ -300,6 +306,11 @@
     function handleResize() {
       window.clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => {
+        if (Math.abs(sentences.clientWidth - lastLayoutWidth) < 1) {
+          appendWhenNearBottom();
+          return;
+        }
+
         relayoutAllSentences();
         appendWhenNearBottom();
       }, 120);
@@ -405,7 +416,7 @@
       try {
         await loadArticles();
         setupColumns();
-        appendSentences();
+        appendSentences(INITIAL_RENDER_COUNT);
         appendWhenNearBottom();
         window.addEventListener("scroll", appendWhenNearBottom, { passive: true });
         window.addEventListener("resize", handleResize);
