@@ -88,8 +88,7 @@
 
     .sentences {
       max-width: 100%;
-      column-width: 72px;
-      column-gap: clamp(12px, 1.8vw, 22px);
+      position: relative;
       padding: 0 clamp(8px, 2vw, 22px);
       overflow-x: hidden;
     }
@@ -99,9 +98,10 @@
       text-orientation: upright;
       display: grid;
       place-items: center;
-      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
       margin: 0;
-      margin-bottom: clamp(12px, 1.8vw, 22px);
       padding: 0.38rem 0.28rem;
       border: 1px solid var(--line);
       background: rgba(255, 255, 255, 0.45);
@@ -111,8 +111,6 @@
       letter-spacing: 0.07em;
       text-decoration: none;
       white-space: nowrap;
-      break-inside: avoid;
-      page-break-inside: avoid;
       transition: background-color 160ms ease, border-color 160ms ease;
     }
 
@@ -154,13 +152,10 @@
       }
 
       .sentences {
-        column-width: 58px;
-        column-gap: 12px;
         padding-inline: 0;
       }
 
       .sentence {
-        margin-bottom: 12px;
         padding: 0.32rem 0.22rem;
         font-size: var(--font-size, 1.08rem);
         line-height: 1.75;
@@ -184,6 +179,10 @@
     let articles = [];
     let nextIndex = 0;
     let isAppending = false;
+    let columnHeights = [];
+    let columnWidth = 0;
+    let columnGap = 0;
+    let rowGap = 0;
 
     function shuffleArticles() {
       for (let index = articles.length - 1; index > 0; index -= 1) {
@@ -194,6 +193,7 @@
 
     function appendSentences(count = articles.length) {
       const fragment = document.createDocumentFragment();
+      const links = [];
 
       for (let index = 0; index < count; index += 1) {
         if (nextIndex > 0 && nextIndex % articles.length === 0) {
@@ -210,11 +210,15 @@
         link.dataset.articleId = article.id;
         link.dataset.articleUrl = article.url;
         link.style.setProperty("--font-size", getFontSize(article.text.length));
+        link.style.width = `${columnWidth}px`;
+        link.style.visibility = "hidden";
         fragment.appendChild(link);
+        links.push(link);
         nextIndex += 1;
       }
 
       sentences.appendChild(fragment);
+      layoutNewSentences(links);
     }
 
     function appendWhenNearBottom() {
@@ -233,6 +237,53 @@
         appendSentences();
         isAppending = false;
       });
+    }
+
+    function getLayoutMetrics() {
+      const isNarrow = window.matchMedia("(max-width: 720px)").matches;
+      return {
+        preferredColumnWidth: isNarrow ? 58 : 72,
+        columnGap: isNarrow ? 12 : Math.min(22, Math.max(12, window.innerWidth * 0.018)),
+        rowGap: isNarrow ? 12 : Math.min(22, Math.max(12, window.innerWidth * 0.018))
+      };
+    }
+
+    function setupColumns() {
+      const metrics = getLayoutMetrics();
+      const containerWidth = sentences.clientWidth;
+      const columnCount = Math.max(1, Math.floor((containerWidth + metrics.columnGap) / (metrics.preferredColumnWidth + metrics.columnGap)));
+
+      columnGap = metrics.columnGap;
+      rowGap = metrics.rowGap;
+      columnWidth = (containerWidth - columnGap * (columnCount - 1)) / columnCount;
+      columnHeights = Array.from({ length: columnCount }, () => 0);
+    }
+
+    function layoutNewSentences(items) {
+      items.forEach((item) => {
+        const columnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+        const x = columnIndex * (columnWidth + columnGap);
+        const y = columnHeights[columnIndex];
+
+        item.style.transform = `translate(${x}px, ${y}px)`;
+        item.style.visibility = "visible";
+        columnHeights[columnIndex] += item.offsetHeight + rowGap;
+      });
+
+      sentences.style.height = `${Math.max(...columnHeights) - rowGap}px`;
+    }
+
+    function relayoutAllSentences() {
+      setupColumns();
+      const items = Array.from(sentences.querySelectorAll(".sentence"));
+
+      items.forEach((item) => {
+        item.style.width = `${columnWidth}px`;
+        item.style.visibility = "hidden";
+        item.style.transform = "translate(0, 0)";
+      });
+
+      layoutNewSentences(items);
     }
 
     function getFontSize(length) {
@@ -326,10 +377,14 @@
     async function init() {
       try {
         await loadArticles();
+        setupColumns();
         appendSentences();
         appendWhenNearBottom();
         window.addEventListener("scroll", appendWhenNearBottom, { passive: true });
-        window.addEventListener("resize", appendWhenNearBottom);
+        window.addEventListener("resize", () => {
+          relayoutAllSentences();
+          appendWhenNearBottom();
+        });
       } catch (error) {
         showError(error);
         throw error;
