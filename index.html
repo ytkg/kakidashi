@@ -20,11 +20,14 @@
     }
 
     html {
+      width: 100%;
       min-height: 100%;
       background: var(--paper);
+      overflow-x: hidden;
     }
 
     body {
+      width: 100%;
       min-height: 100vh;
       margin: 0;
       color: var(--ink);
@@ -35,11 +38,20 @@
       overflow-x: hidden;
     }
 
+    @supports (overflow: clip) {
+      html,
+      body {
+        overflow-x: clip;
+      }
+    }
+
     .page {
       width: min(100%, 1120px);
+      max-width: 100%;
       min-height: 100vh;
       margin: 0 auto;
       padding: calc(48px + clamp(14px, 3vw, 34px)) clamp(18px, 4vw, 48px) clamp(18px, 4vw, 48px);
+      overflow-x: hidden;
     }
 
     .site-head {
@@ -75,9 +87,11 @@
     }
 
     .sentences {
+      max-width: 100%;
       column-width: 72px;
       column-gap: clamp(12px, 1.8vw, 22px);
       padding: 0 clamp(8px, 2vw, 22px);
+      overflow-x: hidden;
     }
 
     .sentence {
