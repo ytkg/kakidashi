@@ -177,7 +177,7 @@
     const INITIAL_RENDER_COUNT = 80;
     const APPEND_RENDER_COUNT = 24;
     const INFINITE_SCROLL_THRESHOLD = 2600;
-    const SENTENCE_END_PATTERN = /^.+?(?:[。！？!?]+[」』）)］\]｝}”’】〕〉》〙〗〟'"]*|\n)/;
+    const SENTENCE_END_PATTERN = /[。！？!?]+[」』）)］\]｝}”’】〕〉》〙〗〟'"]*|\n/g;
 
     const sentences = document.getElementById("sentences");
     let articles = [];
@@ -359,13 +359,37 @@
 
     function getFirstSentence(text) {
       const normalizedText = text.trim();
-      const sentence = normalizedText.match(SENTENCE_END_PATTERN);
+      const sentence = findFirstSentenceEnd(normalizedText);
 
       if (sentence) {
-        return sentence[0].trim();
+        return normalizedText.slice(0, sentence.index + sentence.text.length).trim();
       }
 
       return normalizedText.slice(0, 80);
+    }
+
+    function findFirstSentenceEnd(text) {
+      SENTENCE_END_PATTERN.lastIndex = 0;
+
+      for (const match of text.matchAll(SENTENCE_END_PATTERN)) {
+        const endText = match[0];
+        const nextCharacter = text[match.index + endText.length] || "";
+
+        if (endText === "\n" || !continuesAfterQuotedPunctuation(endText, nextCharacter)) {
+          return {
+            index: match.index,
+            text: endText
+          };
+        }
+      }
+
+      return null;
+    }
+
+    function continuesAfterQuotedPunctuation(endText, nextCharacter) {
+      const endsWithClosingMark = /[」』）)］\]｝}”’】〕〉》〙〗〟'"]$/.test(endText);
+
+      return endsWithClosingMark && /^[ぁ-んァ-ヶー一-龠々〆ヵヶA-Za-z0-9]/.test(nextCharacter);
     }
 
     function showError(error) {
