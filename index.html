@@ -310,15 +310,23 @@
         return "1.82rem";
       }
 
-      if (length <= 16) {
-        return "1.48rem";
+      if (length <= 12) {
+        return "1.56rem";
       }
 
-      if (length <= 30) {
-        return "1.14rem";
+      if (length <= 20) {
+        return "1.34rem";
       }
 
-      return "0.96rem";
+      if (length <= 32) {
+        return "1.12rem";
+      }
+
+      if (length <= 50) {
+        return "0.98rem";
+      }
+
+      return "0.88rem";
     }
 
     function getArticleId(url) {
