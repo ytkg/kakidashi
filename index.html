@@ -109,6 +109,8 @@
       letter-spacing: 0.07em;
       text-decoration: none;
       white-space: nowrap;
+      overflow: visible;
+      overscroll-behavior: none;
       transition: background-color 160ms ease, border-color 160ms ease;
     }
 
@@ -305,18 +307,18 @@
 
     function getFontSize(length) {
       if (length <= 5) {
-        return "1.62rem";
+        return "1.82rem";
       }
 
       if (length <= 16) {
-        return "1.38rem";
+        return "1.48rem";
       }
 
       if (length <= 30) {
-        return "1.18rem";
+        return "1.14rem";
       }
 
-      return "1.04rem";
+      return "0.96rem";
     }
 
     function getArticleId(url) {
